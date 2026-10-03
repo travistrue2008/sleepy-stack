@@ -1,0 +1,13 @@
+[test]
+coverage = true
+coverageDir = "./coverage"
+coverageReporter = ["text", "lcov"]
+
+coveragePathIgnorePatterns = [
+  "test-*.ts",
+]
+
+preload = [
+  "sleepy-serv/plugin",
+  "./test-setup.ts",
+]

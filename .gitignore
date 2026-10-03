@@ -1,0 +1,15 @@
+.playwright-mcp/
+coverage/
+dist/
+migrations-test/
+node_modules/
+playwright-report/
+storybook-static/
+test-results/
+
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+timing.html

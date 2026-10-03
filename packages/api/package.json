@@ -1,0 +1,24 @@
+{
+  "private": true,
+  "type": "module",
+  "name": "@example/api",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "sleepy dev",
+    "clean": "rm -rf node_modules",
+    "build": "sleepy build",
+    "typecheck": "tsc --noEmit",
+    "test": "export $(cat .env 2>/dev/null | xargs) && bun test --parallel=${TEST_MAX_WORKERS}",
+    "test:ext": "bun test"
+  },
+  "dependencies": {
+    "@example/orm": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.22.0",
+    "sleepy-serv": "0.26.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2",
+    "typescript": "^5.9.3"
+  }
+}

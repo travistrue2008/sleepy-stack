@@ -1,0 +1,23 @@
+{
+  "recommendations": [
+    "anthropic.claude-code",
+    "christian-kohler.npm-intellisense",
+    "dbaeumer.vscode-eslint",
+    "eamodio.gitlens",
+    "ecmel.vscode-html-css",
+    "editorconfig.editorconfig",
+    "fill-labs.dependi",
+    "ms-azuretools.vscode-containers",
+    "ms-azuretools.vscode-docker",
+    "ms-ossdata.vscode-pgsql",
+    "oven.bun-vscode",
+    "redhat.vscode-yaml",
+    "shardulm94.trailing-spaces",
+    "styled-components.vscode-styled-components",
+    "tamasfe.even-better-toml",
+    "timonwong.shellcheck",
+    "typescriptteam.native-preview",
+    "vitest.explorer",
+    "waderyan.gitblame"
+  ]
+}

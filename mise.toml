@@ -1,0 +1,29 @@
+# Single source of truth for both runtimes, local and CI.
+#
+# Bun is the package manager and runs the API; Node runs Storybook and Vitest
+# for packages/ui. `ci.yml` (GitHub-hosted) installs both from this file via
+# jdx/mise-action; `build.yml` (self-hosted Mac Minis) bootstraps the `mise`
+# CLI itself first, then reads this same file via `mise install`.
+#
+# Upgrade with `mise use node@<v>` / `mise use bun@<v>`, not `bun upgrade`,
+# which swaps the binary behind mise's back.
+
+[tools]
+node = "24.18.0"
+bun = "1.4.2"
+
+# One-shot onboarding: `mise run setup`. Also what build.yml runs in CI, so
+# this is the single definition of "fully set up" for both. Bun workspaces
+# cover api, db, and orm; ui installs separately (it uses Node/Vitest).
+# The root `bun install` triggers `postinstall`, which builds the orm
+# package and installs ui's deps. `--frozen-lockfile` for reproducibility;
+# run `bun install` directly if you actually want to update the lockfile.
+# Playwright's browser binaries are not managed by mise, so they need their
+# own step, since packages/ui runs its story tests in real Chromium and the
+# root e2e suite drives the same browser.
+[tasks.setup]
+description = 'Install dependencies and the Chromium build used by UI and e2e tests'
+run = [
+  'bun install --frozen-lockfile',
+  'bunx playwright install chromium --with-deps',
+]

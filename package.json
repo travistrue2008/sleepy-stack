@@ -1,0 +1,43 @@
+{
+  "private": true,
+  "name": "sleepy-stack-example",
+  "scripts": {
+    "postinstall": "./scripts/symlink.sh && ./scripts/install.sh",
+    "clean": "./scripts/clean.sh",
+    "kill": "./scripts/kill.sh",
+    "symlink": "./scripts/symlink.sh",
+    "test:api": "bun run --filter @example/api test",
+    "test:ui": "bun run --cwd=packages/ui test",
+    "test:db": "bun run --cwd=packages/db test",
+    "test": "bun run test:api && bun run test:ui && bun run test:db",
+    "typecheck:api": "bun run --cwd=packages/api typecheck",
+    "typecheck:db": "bun run --cwd=packages/db typecheck",
+    "typecheck:ui": "bun run --cwd=packages/ui typecheck",
+    "typecheck": "bun run typecheck:api && bun run typecheck:ui && bun run typecheck:db",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "db:create": "bun run --cwd=packages/db db:create",
+    "db:drop": "bun run --cwd=packages/db db:drop",
+    "db:reset": "bun run --cwd=packages/db db:reset",
+    "migrate:generate": "bun run --cwd=packages/db migrate:generate",
+    "migrate:up": "bun run --cwd=packages/db migrate:up",
+    "migrate:down": "bun run --cwd=packages/db migrate:down"
+  },
+  "workspaces": [
+    "packages/api",
+    "packages/db",
+    "packages/orm"
+  ],
+  "dependencies": {
+    "@example/orm": "workspace:*",
+    "dotenv": "^18.0.1",
+    "drizzle-orm": "^0.45.2",
+    "eslint": "^10.7.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "pg": "^8.22.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.65.0"
+  }
+}

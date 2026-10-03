@@ -1,0 +1,29 @@
+{
+  "private": true,
+  "type": "module",
+  "name": "@example/db",
+  "version": "0.1.0",
+  "scripts": {
+    "clean": "rm -rf node_modules",
+    "db:create": "bun ./src database create",
+    "db:drop": "bun ./src database drop",
+    "db:reset": "bun ./src database reset",
+    "migrate:up": "bun ./src migrate up",
+    "migrate:down": "bun ./src migrate down",
+    "migrate:generate": "bun ./src migrate generate",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@example/orm": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2",
+    "@types/pg": "^8.15.6",
+    "dotenv": "^18.0.1",
+    "drizzle-kit": "^0.31.6",
+    "typescript": "^5.9.3"
+  }
+}
