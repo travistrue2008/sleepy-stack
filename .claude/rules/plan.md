@@ -6,9 +6,8 @@
 - Always output the plan to a markdown file under `.claude/plans`
 - Break plans up into slices
 - Break slices up into individual phases
-    - Provide lists of unit, integration, and E2E test cases at the end of each phase
+    - Provide lists of unit and integration test cases at the end of each phase
     - Group by module
-    - Sub-group by type: unit, integration, E2E
 - Phase numbering should be continuous (see example below)
 - Launch a (Sonnet 4.6) sub-agent to review the plan. This sub-agent should:
     - Raise any ordering issues (example: changing the values for db records on new fields in a step before the step that implements the new field)

@@ -24,7 +24,7 @@ export name is its label.
 - Follow **AAA** (_Arrange_, _Act_, _Assert_) within each `test()` body.
 - `describe()` block usage:
   - Use to group tests for functions, classes, and class methods
-  - Avoid using for high-level tests (such as E2E tests)
+  - Avoid using for high-level tests
   - Class methods (static and instance) get a nested `describe()` block
   - Function/instance method example: `describe('createMessage()')`
   - Static method example: `describe('.connect()')` (leading dot, no class name)

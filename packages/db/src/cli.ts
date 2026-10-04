@@ -11,7 +11,6 @@ type Token = string | undefined
 const Target = {
   Main: 'main',
   Test: 'test',
-  E2E: 'e2e',
 } as const
 
 type Target = (typeof Target)[keyof typeof Target]
@@ -135,40 +134,6 @@ function getTestDatabaseNames (set: DatabaseSet): Promise<string[]> {
   }
 }
 
-function getNewE2EDatabaseNames (): string[] {
-  const raw = process.env.TEST_MAX_WORKERS
-  const count = raw ? Number.parseInt(raw, 10) : 1
-
-  if (!Number.isInteger(count) || count < 1) {
-    throw new Error('TEST_MAX_WORKERS must be a positive integer')
-  }
-
-  return new Array(count).fill(0).map((_, i) => `e2e_${i + 1}`)
-}
-
-function getExistingE2EDatabaseNames (): Promise<string[]> {
-  return runAdminSession(async client => {
-    const { rows } = await client.query<{ datname: string }>(`
-SELECT datname
-FROM pg_database
-WHERE datname ~ '^e2e_\\d+$'
-ORDER BY datname
-    `.trim())
-
-    return rows.map(row => row.datname)
-  })
-}
-
-function getE2EDatabaseNames (set: DatabaseSet): Promise<string[]> {
-  switch (set) {
-    case DatabaseSet.New:
-      return Promise.resolve(getNewE2EDatabaseNames())
-
-    case DatabaseSet.Existing:
-      return getExistingE2EDatabaseNames()
-  }
-}
-
 function getDatabaseNames (
   target: Target,
   set: DatabaseSet,
@@ -179,9 +144,6 @@ function getDatabaseNames (
 
     case Target.Test:
       return getTestDatabaseNames(set)
-
-    case Target.E2E:
-      return getE2EDatabaseNames(set)
   }
 }
 

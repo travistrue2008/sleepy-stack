@@ -25,4 +25,4 @@ We want to order fields by type, however, we want to keep all of the foreign key
 
 ## Schema Changes
 
-Make sure to rebuild the `main`, `test`, and `e2e` databases whenever schema changes happen. This way, we always end with fully-migrated databases.
+Make sure to rebuild the `main` and `test` databases whenever schema changes happen. This way, we always end with fully-migrated databases.

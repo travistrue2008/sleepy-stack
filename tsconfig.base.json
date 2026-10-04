@@ -11,7 +11,7 @@
    *
    * Named tsconfig.base.json rather than tsconfig.json so nothing picks it up
    * implicitly: a root tsconfig.json would become an ambient project for
-   * every stray .ts in the repo, including e2e/ and scripts/, which no
+   * every stray .ts in the repo, including scripts/, which no
    * package config currently covers.
    */
   "compilerOptions": {
