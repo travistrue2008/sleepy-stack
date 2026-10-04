@@ -26,59 +26,59 @@ Make sure this project's Docker compose stack has started before running any com
 # Global (run from root)
 
 # testing
-bun run test:db                 # run DB tests
-bun run test:api                # run API tests
-bun run test:ui                 # run UI tests
-bun run test                    # run ALL tests
+bun run test:db                     # run DB tests
+bun run test:api                    # run API tests
+bun run test:ui                     # run UI tests
+bun run test                        # run ALL tests
 # TypeScript checking
-bun run typecheck:db            # DB TypeScript checks
-bun run typecheck:api           # API TypeScript checks
-bun run typecheck:ui            # UI TypeScript checks
-bun run typecheck               # ALL TypeScript checks
+bun run typecheck:db                # DB TypeScript checks
+bun run typecheck:api               # API TypeScript checks
+bun run typecheck:ui                # UI TypeScript checks
+bun run typecheck                   # ALL TypeScript checks
 # linting
-bun run lint                    # run lint EVERYTHING
-bun run lint:fix                # run lint fixes
+bun run lint                        # run lint EVERYTHING
+bun run lint:fix                    # run lint fixes
 # database management
-bun run db:create               # create target database
-bun run db:drop                 # drop target database
-bun run db:reset                # reset target database
+bun run db:create <main|test>       # create target database
+bun run db:drop <main|test>         # drop target database
+bun run db:reset <main|test>        # reset target database
 # database migration
-bun run migrate:generate        # generate new migration
-bun run migrate:up              # migrate target database up
-bun run migrate:down            # migrate target database down
+bun run migrate:generate            # generate new migration
+bun run migrate:up <main|test>      # migrate target database up
+bun run migrate:down <main|test>    # migrate target database down
 
 # DB (run from packages/db)
 
 # database management
-bun run db:create               # create target database
-bun run db:drop                 # drop target database
-bun run db:reset                # reset target database
+bun run db:create <main|test>       # create target database
+bun run db:drop <main|test>         # drop target database
+bun run db:reset <main|test>        # reset target database
 # database migration
-bun run migrate:generate        # generate new migration
-bun run migrate:up              # migrate target database up
-bun run migrate:down            # migrate target database down
+bun run migrate:generate            # generate new migration
+bun run migrate:up <main|test>      # migrate target database up
+bun run migrate:down <main|test>    # migrate target database down
 # misc
-bun run typecheck               # TypeScript checks
-bun run test                    # run tests
-bun test src/utils.test.ts      # run single test suite
+bun run typecheck                   # TypeScript checks
+bun run test                        # run tests
+bun test src/utils.test.ts          # run single test suite
 
 # API (run from packages/api)
 
-bun dev                         # start (watch mode)
-bun test                        # run tests
-bun test src/utils.test.ts      # run single test suite
+bun dev                             # start (watch mode)
+bun test                            # run tests
+bun test src/utils.test.ts          # run single test suite
 
 # UI (run from packages/ui)
 
-bun run dev                     # run vite dev server (watch mode)
-bun run build                   # build React app into static site
-bun run preview                 # build preview
-bun run storybook               # start Storybook site (watch mode)
-bun run storybook:build         # build Storybook site
-bun run typecheck               # TypeScript checks
-bun run test                    # run tests (one-shot)
-bun run test -- --project=unit  # run unit tests
-bun run test:watch              # run tests (watch mode)
+bun run dev                         # run vite dev server (watch mode)
+bun run build                       # build React app into static site
+bun run preview                     # build preview
+bun run storybook                   # start Storybook site (watch mode)
+bun run storybook:build             # build Storybook site
+bun run typecheck                   # TypeScript checks
+bun run test                        # run tests (one-shot)
+bun run test -- --project=unit      # run unit tests
+bun run test:watch                  # run tests (watch mode)
 ```
 
 **Runtimes:** Bun is the package manager everywhere and runs `packages/api`.
