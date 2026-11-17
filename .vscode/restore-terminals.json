@@ -1,0 +1,36 @@
+{
+  "terminals": [
+    {
+      "splitTerminals": [
+        {
+          "name": "api",
+          "commands": ["bun run --cwd=packages/api dev"]
+        },
+        {
+          "name": "ui",
+          "commands": ["bun run --cwd=packages/ui dev"]
+        },
+        {
+          "name": "ui:storybook",
+          "commands": ["bun run --cwd=packages/ui storybook"]
+        }
+      ]
+    },
+    {
+      "splitTerminals": [
+        {
+          "name": "e2e",
+          "commands": []
+        }
+      ]
+    },
+    {
+      "splitTerminals": [
+        {
+          "name": "general",
+          "commands": []
+        }
+      ]
+    }
+  ]
+}
