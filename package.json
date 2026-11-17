@@ -2,7 +2,7 @@
   "private": true,
   "name": "sleepy-stack-example",
   "scripts": {
-    "postinstall": "./scripts/symlink.sh && ./scripts/install.sh",
+    "postinstall": "./scripts/symlink.sh",
     "clean": "./scripts/clean.sh",
     "kill": "./scripts/kill.sh",
     "symlink": "./scripts/symlink.sh",
@@ -26,7 +26,8 @@
   "workspaces": [
     "packages/api",
     "packages/db",
-    "packages/orm"
+    "packages/orm",
+    "packages/ui"
   ],
   "dependencies": {
     "@example/orm": "workspace:*",
