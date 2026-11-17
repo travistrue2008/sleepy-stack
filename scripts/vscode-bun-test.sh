@@ -11,6 +11,18 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# VS Code starts the extension without the user's shell, so `bun` is not on
+# PATH. Run bun through mise so the version pinned in mise.toml is used.
+# shellcheck source=find-mise.sh
+. "$ROOT/scripts/find-mise.sh"
+
+if MISE="$(find_mise)"; then
+	bun() { "$MISE" exec -- bun "$@"; }
+elif ! command -v bun >/dev/null 2>&1; then
+	echo "vscode-bun-test: neither mise nor bun was found" >&2
+	exit 127
+fi
+
 # the extension passes `test` as the first arg when using a custom script
 if [ "${1:-}" = "test" ]; then
 	shift
@@ -52,7 +64,9 @@ for arg in "$@"; do
 done
 
 if [ ${#packages[@]} -eq 0 ]; then
-	exec bun test "$@"
+	# not `exec`: that would bypass the bun() function above
+	bun test "$@"
+	exit $?
 fi
 
 status=0

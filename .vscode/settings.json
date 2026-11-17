@@ -1,4 +1,5 @@
 {
   "bun.test.customScript": "./scripts/vscode-bun-test.sh",
   "bun.test.filePattern": "packages/{api,schema}/**/*.test.{js,ts}",
+  "vitest.nodeExecutable": "${workspaceFolder}/scripts/vscode-node.sh"
 }
