@@ -4,14 +4,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Setup
 
-```bash
-# install global environment packages/dependencies
-brew install mise          # macOS
-apt-get install -y mise    # Ubuntu/Debian
-```
+### Install Environment Dependencies
 
 ```bash
-# install project-level dependencies
+# macOS
+brew update
+brew install mise
+echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
+
+# Ubuntu 26.04
+sudo add-apt-repository -y ppa:jdxcode/mise
+sudo apt update
+sudo apt install -y mise
+echo 'eval "$(mise activate bash)"' >> ~/.bashrc
+```
+
+Then, start a new terminal session.
+
+### Update Environment Dependencies
+
+```bash
+# macOS
+brew update
+brew upgrade mise
+
+# Ubuntu 26.04
+sudo apt update
+sudo apt install -y --only-upgrade mise
+```
+
+### Install project-level Dependencies
+
+```bash
 mise trust
 mise install
 mise run setup
@@ -104,7 +128,7 @@ New functionality must be covered by new tests. See `.claude/rules/tests.md` for
 
 Only give me an objective answers as the goal is clarity, and not wishful thinking/comfort. Do not instantly agree with what I'm saying for the sake of agreeing. Be objective. You will act as 3 individuals: the first one gives a response, the second one makes an opposing argument, and the third one acts as the judge who combines the most accurate parts of each argument, and puts them together to form a single answer. Only provide the judge's output.
 
-## Notes
+## Kbase
 
 - Contextual knowledge lives in the [`.claude/kbase`](./kbase/index.md) knowledge base. Start with [Architecture Overview](./kbase/architecture/overview.md).
 - `.claude/kbase/ideas` is where unimplemented ideas and edge-cases go. It's not guaranteed that those ideas will go anywhere though.
