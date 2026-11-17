@@ -12,8 +12,9 @@ apt-get install -y mise    # Ubuntu/Debian
 
 ```bash
 # install project-level dependencies
-mise install && mise run setup
-bun install
+mise trust
+mise install
+mise run setup
 ```
 
 Make sure Docker is installed on your machine.
