@@ -4,15 +4,15 @@
   "name": "@example/ui",
   "version": "0.1.0",
   "scripts": {
-    "dev": "mise exec -- vite",
+    "dev": "vite",
     "clean": "rm -rf node_modules",
-    "build": "mise exec -- vite build",
-    "preview": "mise exec -- vite preview",
-    "storybook": "mise exec -- storybook dev -p 6006",
-    "storybook:build": "mise exec -- storybook build",
-    "typecheck": "mise exec -- tsc --noEmit",
-    "test": "mise exec -- vitest run",
-    "test:watch": "mise exec -- vitest"
+    "build": "vite build",
+    "preview": "vite preview",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -1,9 +1,7 @@
-# Single source of truth for both runtimes, local and CI.
+# Single source of truth for both runtimes.
 #
 # Bun is the package manager and runs the API; Node runs Storybook and Vitest
-# for packages/ui. `ci.yml` (GitHub-hosted) installs both from this file via
-# jdx/mise-action; `build.yml` (self-hosted Mac Minis) bootstraps the `mise`
-# CLI itself first, then reads this same file via `mise install`.
+# for packages/ui.
 #
 # Upgrade with `mise use node@<v>` / `mise use bun@<v>`, not `bun upgrade`,
 # which swaps the binary behind mise's back.
