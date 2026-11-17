@@ -1,7 +1,7 @@
 import db from '../../../db'
-import { client } from '../../../../test-helpers'
 import { StatusCode } from 'sleepy-serv'
 import { describe, test, expect } from 'bun:test'
+import { client } from '../../../../test-helpers'
 
 describe('GET /api/items/:itemId', () => {
   test('when "params.itemId" is non-numeric', async () => {
