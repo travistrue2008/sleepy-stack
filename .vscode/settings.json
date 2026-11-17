@@ -2,5 +2,32 @@
   "bun.test.customScript": "./scripts/vscode-bun-test.sh",
   "bun.test.filePattern": "packages/{api,schema}/**/*.test.{js,ts}",
   "terminal.integrated.persistentSessionReviveProcess": "never",
-  "vitest.nodeExecutable": "${workspaceFolder}/scripts/vscode-node.sh"
+  "vitest.nodeExecutable": "${workspaceFolder}/scripts/vscode-node.sh",
+  "pgsql.connections": [
+    {
+      "id": "DD72036A-82CB-4D57-A052-A9B0CF7F9E42",
+      "groupId": "DEE36269-3B77-4879-A041-8A7C7F6C488F",
+      "authenticationType": "SqlLogin",
+      "connectTimeout": 15,
+      "applicationName": "vscode-pgsql",
+      "clientEncoding": "utf8",
+      "sslmode": "prefer",
+      "savePassword": true,
+      "sslRootCertMode": "none",
+      "server": "localhost",
+      "user": "user",
+      "password": "",
+      "database": "",
+      "profileName": "Local",
+      "sshPassword": "",
+      "profileOrigin": "parameters",
+      "expiresOn": 0
+    }
+  ],
+  "pgsql.serverGroups": [
+    {
+      "name": "Servers",
+      "id": "DEE36269-3B77-4879-A041-8A7C7F6C488F"
+    }
+  ]
 }
