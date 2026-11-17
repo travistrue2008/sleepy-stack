@@ -1,6 +1,8 @@
 {
+  "runOnStartup": false,
   "terminals": [
     {
+      "cwd": "${workspaceFolder}",
       "splitTerminals": [
         {
           "name": "api",
@@ -17,6 +19,7 @@
       ]
     },
     {
+      "cwd": "${workspaceFolder}",
       "splitTerminals": [
         {
           "name": "e2e",
@@ -25,6 +28,7 @@
       ]
     },
     {
+      "cwd": "${workspaceFolder}",
       "splitTerminals": [
         {
           "name": "general",

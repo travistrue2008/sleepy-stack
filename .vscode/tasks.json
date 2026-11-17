@@ -1,0 +1,44 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "environment: start",
+      "detail": "Start Docker and the compose stack (scripts/vscode.sh)",
+      "type": "shell",
+      "command": "./scripts/vscode.sh",
+      "presentation": {
+        "close": true,
+        "reveal": "silent",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "environment: restore terminals",
+      "detail": "Run the Restore Terminals command once Docker and compose are up; the command variable runs it when this task resolves",
+      "dependsOn": ["environment: start"],
+      "type": "shell",
+      "command": "echo",
+      "presentation": {
+        "close": true,
+        "reveal": "never",
+        "panel": "dedicated"
+      },
+      "problemMatcher": [],
+      "args": [
+        "${command:restore-terminals.restoreTerminals}"
+      ],
+    },
+    {
+      "label": "environment: open",
+      "detail": "Runs when the folder opens: start Docker and compose, then restore terminals",
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": [],
+      "dependsOn": [
+        "environment: restore terminals"
+      ]
+    }
+  ]
+}
