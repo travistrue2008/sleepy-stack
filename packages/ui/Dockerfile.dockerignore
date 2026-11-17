@@ -1,0 +1,13 @@
+node_modules/
+dist/
+
+**/*.test.*
+**/*.stories.*
+*.log
+.env
+.git
+.gitignore
+.storybook
+storybook-static
+vitest.config.ts
+vitest.setup.ts
