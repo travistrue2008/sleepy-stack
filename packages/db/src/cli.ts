@@ -8,12 +8,19 @@ import type { Client } from 'pg'
 
 type Token = string | undefined
 
-const Target = {
-  Main: 'main',
+export const Prefix = {
   Test: 'test',
+  E2E: 'e2e',
 } as const
 
-type Target = (typeof Target)[keyof typeof Target]
+export type Prefix = (typeof Prefix)[keyof typeof Prefix]
+
+export const Target = {
+  Main: 'main',
+  ...Prefix,
+} as const
+
+export type Target = (typeof Target)[keyof typeof Target]
 
 const DatabaseSet = {
   New: 'new',
@@ -100,7 +107,7 @@ function getMainDatabaseName (): string {
   return name
 }
 
-function getNewTestDatabaseNames (): string[] {
+function getNewTestDatabaseNames (prefix: Prefix): string[] {
   const raw = process.env.TEST_MAX_WORKERS
   const count = raw ? Number.parseInt(raw, 10) : 1
 
@@ -108,29 +115,32 @@ function getNewTestDatabaseNames (): string[] {
     throw new Error('TEST_MAX_WORKERS must be a positive integer')
   }
 
-  return new Array(count).fill(0).map((_, i) => `test_${i + 1}`)
+  return new Array(count).fill(0).map((_, i) => `${prefix}_${i + 1}`)
 }
 
-function getExistingTestDatabaseNames (): Promise<string[]> {
+function getExistingTestDatabaseNames (prefix: Prefix): Promise<string[]> {
   return runAdminSession(async client => {
     const { rows } = await client.query<{ datname: string }>(`
 SELECT datname
 FROM pg_database
-WHERE datname ~ '^test_\\d+$'
+WHERE datname ~ $1
 ORDER BY datname
-    `.trim())
+    `.trim(), [`^${prefix}_\\d+$`])
 
     return rows.map(row => row.datname)
   })
 }
 
-function getTestDatabaseNames (set: DatabaseSet): Promise<string[]> {
+function getTestDatabaseNames (
+  prefix: Prefix,
+  set: DatabaseSet,
+): Promise<string[]> {
   switch (set) {
     case DatabaseSet.New:
-      return Promise.resolve(getNewTestDatabaseNames())
+      return Promise.resolve(getNewTestDatabaseNames(prefix))
 
     case DatabaseSet.Existing:
-      return getExistingTestDatabaseNames()
+      return getExistingTestDatabaseNames(prefix)
   }
 }
 
@@ -143,7 +153,10 @@ function getDatabaseNames (
       return Promise.resolve([getMainDatabaseName()])
 
     case Target.Test:
-      return getTestDatabaseNames(set)
+      return getTestDatabaseNames(Prefix.Test, set)
+
+    case Target.E2E:
+      return getTestDatabaseNames(Prefix.E2E, set)
   }
 }
 
