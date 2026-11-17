@@ -5,8 +5,17 @@ import { defineConfig, loadEnv } from 'vite'
 
 export default defineConfig(({ mode }) => {
   const { API_PORT, UI_PORT } = loadEnv(mode, './', '')
-  const apiPort = Number.parseInt(API_PORT ?? '', 10)
-  const uiPort = Number.parseInt(UI_PORT ?? '', 10)
+
+  if (!API_PORT) {
+    throw new Error('API_PORT not set')
+  }
+
+  if (!UI_PORT) {
+    throw new Error('UI_PORT not set')
+  }
+
+  const apiPort = Number.parseInt(API_PORT, 10)
+  const uiPort = Number.parseInt(UI_PORT, 10)
 
   const entry = {
     strictPort: true,
