@@ -1,5 +1,5 @@
 import Page from './Page'
-import { expect } from 'storybook/test'
+import { expect, spyOn } from 'storybook/test'
 import { withRouter } from 'storybook-addon-remix-react-router'
 import { ComponentRefs } from '../../../../.storybook/mocks'
 
@@ -44,6 +44,12 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
+  beforeEach: () => {
+    const fetchSpy = spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(Response.json([])))
+
+    return () => fetchSpy.mockRestore()
+  },
   play: async ({ canvasElement }) => {
     const refs = new PageRefs(canvasElement)
 

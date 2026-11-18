@@ -85,7 +85,7 @@ async function runExec (...args: Parameters<typeof exec>) {
 }
 
 async function runAdminSession<T> (fn: (client: Client) => Promise<T>) {
-  const port = Number.parseInt(process.env.POSTGRES_PORT ?? '', 10)
+  const port = Number.parseInt(process.env.POSTGRES_PORT!, 10)
 
   const client = new pg.Client({
     port,

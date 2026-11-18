@@ -2,20 +2,19 @@ import pg from 'pg'
 import * as schema from '@example/orm'
 import { is, getTableName } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
+import { requireEnv } from './env'
 
 const TABLE_NAMES = Object.values(schema)
   .filter(value => is(value, PgTable))
   .map(value => `"${getTableName(value)}"`)
 
 function getConfig () {
-  const port = process.env.POSTGRES_PORT!
-
   return {
-    port: Number.parseInt(port, 10),
-    host: process.env.POSTGRES_HOST,
-    user: process.env.POSTGRES_USER,
-    password: process.env.POSTGRES_PASSWORD,
-    database: process.env.POSTGRES_DB,
+    port: Number.parseInt(requireEnv('POSTGRES_PORT'), 10),
+    host: requireEnv('POSTGRES_HOST'),
+    user: requireEnv('POSTGRES_USER'),
+    password: requireEnv('POSTGRES_PASSWORD'),
+    database: requireEnv('POSTGRES_DB'),
   }
 }
 

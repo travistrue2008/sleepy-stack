@@ -1,3 +1,5 @@
+import { requireEnv } from './env'
+
 export const HttpStatus = {
   Continue: 100,
   SwitchingProtocols: 101,
@@ -70,5 +72,5 @@ export const HttpStatus = {
 export type HttpStatus = typeof HttpStatus[keyof typeof HttpStatus]
 
 export function getBaseUrl (): string {
-  return `http://localhost:${process.env.UI_PORT}`
+  return `http://localhost:${requireEnv('UI_PORT')}`
 }

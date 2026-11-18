@@ -1,6 +1,7 @@
 import { config } from 'dotenv'
 import { defineConfig, devices } from '@playwright/test'
 import { getBaseUrl } from './utils/helpers'
+import { requireEnv } from './utils/env'
 
 if (!process.env.CI) {
   config({
@@ -31,9 +32,9 @@ export default defineConfig({
     webServer: [
       {
         reuseExistingServer: false,
-        command: 'bun run --cwd=../db db:reset e2e && bun run dev',
         cwd: '../packages/api',
-        url: `http://localhost:${process.env.API_PORT}/api/health`,
+        url: `http://localhost:${requireEnv('API_PORT')}/api/health`,
+        command: 'bun run --cwd=../db db:reset e2e && bun run dev',
       },
       {
         reuseExistingServer: false,

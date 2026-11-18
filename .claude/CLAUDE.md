@@ -139,5 +139,5 @@ Only give me an objective answers as the goal is clarity, and not wishful thinki
 
 ## Kbase
 
-- Contextual knowledge lives in the [`.claude/kbase`](./kbase/index.md) knowledge base. Start with [Architecture Overview](./kbase/architecture/overview.md).
+- Contextual knowledge lives in the [`.claude/kbase`](./kbase/index.md) knowledge base.
 - `.claude/kbase/ideas` is where unimplemented ideas and edge-cases go. It's not guaranteed that those ideas will go anywhere though.

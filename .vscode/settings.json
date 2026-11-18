@@ -1,6 +1,6 @@
 {
   "bun.test.customScript": "./scripts/vscode-bun-test.sh",
-  "bun.test.filePattern": "packages/{api,schema}/**/*.test.{js,ts}",
+  "bun.test.filePattern": "packages/{api,db,orm}/**/*.test.{js,ts}",
   "terminal.integrated.persistentSessionReviveProcess": "never",
   "vitest.nodeExecutable": "${workspaceFolder}/scripts/vscode-node.sh",
   "pgsql.connections": [
