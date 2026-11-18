@@ -1,17 +1,9 @@
-# Single source of truth for both runtimes.
-#
-# Bun is the package manager and runs the API; Node runs Storybook and Vitest
-# for packages/ui.
-#
-# Upgrade with `mise use node@<v>` / `mise use bun@<v>`, not `bun upgrade`,
-# which swaps the binary behind mise's back.
-
 [tools]
 node = "24.18.0"
 bun = "1.4.4"
 
 [tasks.setup]
-description = 'Install dependencies and the Chromium build used by UI'
+description = 'Install environment dependencies'
 run = [
   'bun install ${CI:+--frozen-lockfile}',
   'bunx playwright install chromium --with-deps',

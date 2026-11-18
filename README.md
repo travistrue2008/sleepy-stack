@@ -74,14 +74,35 @@ bun run test        # all test suites
 bun run test:api    # packages/api, via Bun's test runner
 bun run test:ui     # packages/ui, via Vitest (jsdom + Storybook in Chromium)
 bun run test:db     # packages/db
+bun run test:e2e           # Playwright (e2e/), headed, against dev servers
+bun run test:e2e:headless  # same, headless
+bun run test:e2e:ci        # Playwright against the built Docker images
 
-bun run typecheck   # all packages
+bun run typecheck   # all packages (including e2e/)
 bun run lint        # ESLint across the repo
 
 cd packages/api && bun dev        # API server
 cd packages/ui  && bun run dev    # Vite dev server on 5173
 cd packages/ui  && bun run storybook   # Storybook on 6006
 ```
+
+## End-to-end tests
+
+The Playwright specs live in `e2e/`. They run against a separate `e2e_1`
+database, which is truncated before every test.
+
+- `bun run test:e2e` and `bun run test:e2e:headless` start the API and UI dev
+  servers themselves, reset the e2e databases (`bun run db:reset e2e`), run the
+  specs, and stop everything afterwards. They refuse to reuse servers that are
+  already listening, so stop yours first or override the ports for the run:
+  `API_PORT=3100 UI_PORT=5273 bun run test:e2e:headless`.
+- `bun run test:e2e:ci` builds the db, api and ui images, starts
+  `compose.playwright.yml` (Postgres, migrations, api, ui), runs the same specs
+  against the images through the ui's published port, and always tears the stack
+  down. It needs Docker running and is the one to use on a CI runner.
+
+Playwright needs a Chromium build that matches its version, which
+`mise run setup` installs.
 
 ## Package layout
 
