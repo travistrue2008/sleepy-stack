@@ -2,7 +2,14 @@ import { test as base } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
 import { truncateTables } from '../utils/db'
 import { requireEnv } from '../utils/env'
-import { HttpStatus, getBaseUrl, sleep } from '../utils/helpers'
+
+import {
+  HttpStatus,
+  getBaseUrl,
+  getDatabaseName,
+  getStackUrl,
+  sleep,
+} from '../utils/helpers'
 
 const HEALTH_INTERVAL_MS = 500
 const HEALTH_REQUEST_TIMEOUT_MS = 2_000
@@ -36,19 +43,20 @@ type ContainerState = {
 type ContainerStates = Record<Service, ContainerState>
 
 type Fixtures = {
+  portOffset: number
   _cleanup: void
 }
 
 function isContainerRun (): boolean {
-  return Boolean(process.env.E2E_COMPOSE_PROJECT)
+  return Boolean(process.env.E2E_COMPOSE_PROJECT_PREFIX)
 }
 
 function docker (args: string[]): string {
   return execFileSync('docker', args, { encoding: 'utf8' }).trim()
 }
 
-function getContainerId (service: Service): string {
-  const project = requireEnv('E2E_COMPOSE_PROJECT')
+function getContainerId (service: Service, portOffset: number): string {
+  const project = `${requireEnv('E2E_COMPOSE_PROJECT_PREFIX')}-${portOffset}`
 
   const id = docker([
     'ps',
@@ -67,12 +75,15 @@ function getContainerId (service: Service): string {
   return id
 }
 
-function getContainerState (service: Service): ContainerState {
+function getContainerState (
+  service: Service,
+  portOffset: number,
+): ContainerState {
   const output = docker([
     'inspect',
     '--format',
     INSPECT_FORMAT,
-    getContainerId(service),
+    getContainerId(service, portOffset),
   ])
 
   const [restarts, status, exitCode, oomKilled] = output.split(' ')
@@ -85,10 +96,10 @@ function getContainerState (service: Service): ContainerState {
   }
 }
 
-function getContainerStates (): ContainerStates {
+function getContainerStates (portOffset: number): ContainerStates {
   return {
-    [Service.Api]: getContainerState(Service.Api),
-    [Service.Ui]: getContainerState(Service.Ui),
+    [Service.Api]: getContainerState(Service.Api, portOffset),
+    [Service.Ui]: getContainerState(Service.Ui, portOffset),
   }
 }
 
@@ -146,8 +157,8 @@ async function isHealthy (url: string): Promise<boolean> {
   }
 }
 
-async function waitUntilHealthy (): Promise<void> {
-  const url = `${getBaseUrl()}/api/health`
+async function waitUntilHealthy (baseUrl: string): Promise<void> {
+  const url = `${baseUrl}/api/health`
   const timeout = getHealthTimeout()
   const deadline = Date.now() + timeout
 
@@ -164,12 +175,18 @@ async function waitUntilHealthy (): Promise<void> {
 }
 
 export const test = base.extend<Fixtures>({
+  portOffset: async ({}, use, testInfo) => {
+    await use(testInfo.parallelIndex + 1)
+  },
+  baseURL: async ({ portOffset }, use) => {
+    await use(isContainerRun() ? getStackUrl(portOffset) : getBaseUrl())
+  },
   _cleanup: [
-    async ({ browser }, use) => {
-      await waitUntilHealthy()
-      await truncateTables()
+    async ({ browser, portOffset, baseURL }, use) => {
+      await waitUntilHealthy(baseURL!)
+      await truncateTables(getDatabaseName(portOffset))
 
-      const before = isContainerRun() ? getContainerStates() : null
+      const before = isContainerRun() ? getContainerStates(portOffset) : null
 
       await use()
 
@@ -178,7 +195,7 @@ export const test = base.extend<Fixtures>({
       }
 
       if (before) {
-        const deaths = findDeaths(before, getContainerStates())
+        const deaths = findDeaths(before, getContainerStates(portOffset))
 
         if (deaths.length) {
           throw new Error(deaths.join('\n'))

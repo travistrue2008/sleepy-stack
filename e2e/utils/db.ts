@@ -8,22 +8,23 @@ const TABLE_NAMES = Object.values(schema)
   .filter(value => is(value, PgTable))
   .map(value => `"${getTableName(value)}"`)
 
-function getConfig () {
+function getConfig (database: string) {
   return {
     port: Number.parseInt(requireEnv('POSTGRES_PORT'), 10),
     host: requireEnv('POSTGRES_HOST'),
     user: requireEnv('POSTGRES_USER'),
     password: requireEnv('POSTGRES_PASSWORD'),
-    database: requireEnv('POSTGRES_DB'),
+    database,
   }
 }
 
-export async function truncateTables (): Promise<void> {
+export async function truncateTables (database: string): Promise<void> {
   if (!TABLE_NAMES.length) {
     return
   }
 
-  const client = new pg.Client(getConfig())
+  const config = getConfig(database)
+  const client = new pg.Client(config)
 
   await client.connect()
 

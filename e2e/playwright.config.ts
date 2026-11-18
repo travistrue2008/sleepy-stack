@@ -1,6 +1,6 @@
 import { config } from 'dotenv'
 import { defineConfig, devices } from '@playwright/test'
-import { getBaseUrl } from './utils/helpers'
+import { getBaseUrl, getWorkerCount } from './utils/helpers'
 import { requireEnv } from './utils/env'
 
 if (!process.env.CI) {
@@ -12,8 +12,11 @@ if (!process.env.CI) {
 
 process.env.POSTGRES_DB = 'e2e_1'
 
+const workers = getWorkerCount()
+
 export default defineConfig({
-  workers: 1,
+  workers,
+  fullyParallel: workers > 1,
   timeout: 60_000,
   testDir: './tests',
   globalSetup: './global-setup.ts',

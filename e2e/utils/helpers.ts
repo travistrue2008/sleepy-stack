@@ -75,6 +75,23 @@ export function getBaseUrl (): string {
   return `http://localhost:${requireEnv('UI_PORT')}`
 }
 
+export function getWorkerCount (): number {
+  return process.env.CI
+    ? Number.parseInt(process.env.TEST_MAX_WORKERS!, 10)
+    : 1
+}
+
+export function getStackUrl (portOffset: number): string {
+  const rawUiPort = requireEnv('UI_PORT')
+  const port = Number.parseInt(rawUiPort, 10) + portOffset
+
+  return `http://localhost:${port}`
+}
+
+export function getDatabaseName (portOffset: number): string {
+  return `e2e_${portOffset}`
+}
+
 export function sleep (ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
