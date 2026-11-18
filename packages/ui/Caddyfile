@@ -2,9 +2,10 @@
 # container beside it, so the image is a complete origin on its own.
 #
 # API_URL is the api's address as seen from this container, for example
-# http://api:3000, and is passed as an environment variable.
+# http://api:3000, and UI_PORT is the port to listen on. Both are passed as
+# environment variables.
 
-:5173 {
+:{$UI_PORT} {
 	root * /srv
 
 	encode gzip zstd

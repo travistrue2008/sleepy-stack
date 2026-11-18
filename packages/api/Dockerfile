@@ -33,14 +33,11 @@ RUN bun run build
 FROM oven/bun:1.4.4-alpine AS runtime
 
 ENV NODE_ENV=production
-ENV API_PORT=3000
 
 WORKDIR /app
 
 COPY --from=build /repo/packages/api/dist/api ./api
 
 USER bun
-
-EXPOSE 3000
 
 CMD ["./api"]

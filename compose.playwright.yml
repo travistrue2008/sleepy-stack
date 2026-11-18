@@ -1,0 +1,93 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "0:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      retries: 15
+      timeout: 3s
+      interval: 2s
+      test: [
+        "CMD-SHELL",
+        "pg_isready -U ${POSTGRES_USER} -d postgres"
+      ]
+
+  postgres-init:
+    image: example/db:ci
+    pull_policy: never
+    restart: "no"
+    command: ["bun", "run", "db:create", "e2e"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres-migrate:
+    image: example/db:ci
+    pull_policy: never
+    restart: "no"
+    command: ["bun", "run", "migrate:up", "e2e"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
+
+  api:
+    image: example/api:ci
+    pull_policy: never
+    environment:
+      API_PORT: ${API_PORT}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: e2e_1
+    healthcheck:
+      retries: 30
+      timeout: 3s
+      interval: 2s
+      test: [
+        "CMD",
+        "bun",
+        "-e",
+        "process.exit((await fetch(`http://127.0.0.1:$${process.env.API_PORT}/api/health`)).status === 204 ? 0 : 1)"
+      ]
+    depends_on:
+      postgres-migrate:
+        condition: service_completed_successfully
+
+  ui:
+    image: example/ui:ci
+    pull_policy: never
+    environment:
+      API_URL: api:${API_PORT}
+      UI_PORT: ${UI_PORT}
+    ports:
+      - "0:${UI_PORT}"
+    healthcheck:
+      retries: 30
+      timeout: 3s
+      interval: 2s
+      test: [
+        "CMD",
+        "wget",
+        "-q",
+        "-O",
+        "/dev/null",
+        "http://127.0.0.1:${UI_PORT}/"
+      ]
+    depends_on:
+      api:
+        condition: service_healthy

@@ -11,6 +11,7 @@
     "test:db": "bun run --cwd=packages/db test",
     "test:e2e": "NODE_OPTIONS='--import tsx' playwright test --config e2e/playwright.config.ts --headed",
     "test:e2e:headless": "NODE_OPTIONS='--import tsx' playwright test --config e2e/playwright.config.ts",
+    "test:e2e:ci": "./scripts/e2e-docker.sh",
     "typecheck:api": "bun run --cwd=packages/api typecheck",
     "typecheck:db": "bun run --cwd=packages/db typecheck",
     "typecheck:ui": "bun run --cwd=packages/ui typecheck",
