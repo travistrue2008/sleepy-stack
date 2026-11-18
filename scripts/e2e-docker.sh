@@ -73,22 +73,37 @@ docker info >/dev/null 2>&1 || die "the Docker daemon is not running"
 
 if MISE="$(find_mise)"; then
 	bun() { "$MISE" exec -- bun "$@"; }
-	node() { "$MISE" exec -- node "$@"; }
 elif ! command -v bun >/dev/null 2>&1; then
 	die "neither mise nor bun was found"
 fi
 
+# Values already in the environment win over .env, as they do for dotenv and
+# compose, so a run can override a port: UI_PORT=5273 bun run test:e2e:ci
 if [ -f .env ]; then
-	set -a
-	# shellcheck disable=SC1091
-	. ./.env
-	set +a
+	while IFS='=' read -r key value || [ -n "$key" ]; do
+		case "$key" in
+			'' | '#'*) continue ;;
+		esac
+
+		value="${value%\"}"
+		value="${value#\"}"
+		value="${value%\'}"
+		value="${value#\'}"
+
+		if [ -z "${!key+x}" ]; then
+			export "$key=$value"
+		fi
+	done < .env
 fi
 
 : "${POSTGRES_USER:?POSTGRES_USER is not set (see .env.example)}"
 : "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set (see .env.example)}"
 : "${API_PORT:?API_PORT is not set (see .env.example)}"
 : "${UI_PORT:?UI_PORT is not set (see .env.example)}"
+
+if (exec 3<>"/dev/tcp/127.0.0.1/${UI_PORT}") 2>/dev/null; then
+	die "port ${UI_PORT} is already in use; use a free one, for example UI_PORT=5273 bun run test:e2e:ci"
+fi
 
 # 1. Images. The root is passed as a named build context, as in each Dockerfile header.
 for image in db api ui; do
@@ -110,23 +125,6 @@ for image in db api ui; do
 		"packages/${image}" >/dev/null
 done
 
-# The ui's host port is chosen once, up front. An ephemeral port would be
-# re-drawn whenever Docker restarts the container, leaving the suite pointed at a
-# dead port, so the port has to be the same before and after a restart.
-free_port() {
-	node -e "
-		const server = require('node:net').createServer()
-
-		server.listen(0, () => {
-			console.log(server.address().port)
-			server.close()
-		})
-	"
-}
-
-ui_port="${E2E_UI_HOST_PORT:-$(free_port)}"
-export E2E_UI_HOST_PORT="$ui_port"
-
 # 2. Stack. --wait blocks until every healthcheck passes and the one-shot
 # services (database creation and migration) have completed.
 log "starting the compose stack"
@@ -141,7 +139,7 @@ pg_port="$("${COMPOSE[@]}" port postgres 5432 | sed 's/.*://')"
 ready=0
 
 for _ in $(seq 1 "$TIMEOUT"); do
-	if curl -sf -o /dev/null "http://localhost:${ui_port}/api/health"; then
+	if curl -sf -o /dev/null "http://localhost:${UI_PORT}/api/health"; then
 		ready=1
 		break
 	fi
@@ -168,7 +166,7 @@ events_pid=$!
 # give the event stream a moment to attach before the first test runs
 sleep 1
 
-log "running the suite against ui port ${ui_port} and postgres port ${pg_port}"
+log "running the suite against ui port ${UI_PORT} and postgres port ${pg_port}"
 
 status=0
 
@@ -176,7 +174,6 @@ CI=true \
 	E2E_COMPOSE_PROJECT="$PROJECT" \
 	POSTGRES_HOST=localhost \
 	POSTGRES_PORT="$pg_port" \
-	UI_PORT="$ui_port" \
 	bun run test:e2e:headless "$@" || status=$?
 
 kill "$events_pid" 2>/dev/null || true

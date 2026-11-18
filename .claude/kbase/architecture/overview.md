@@ -88,8 +88,12 @@ hidden. So the run recovers and reports, in three layers:
 Two Docker details shaped this. A restart policy never applies to a container
 that was stopped by hand, so `docker kill` and `docker stop` cannot simulate a
 crash; the process has to exit by itself (or be OOM-killed). And an ephemeral
-host port (`0:5173`) is drawn again whenever the container restarts, so the
-script picks the ui's host port once and passes it in as `E2E_UI_HOST_PORT`.
+host port (`0:5173`) is drawn again whenever the container restarts, so the ui
+is published on `UI_PORT` itself (`"${UI_PORT}:${UI_PORT}"`): one input, the same
+number on the host and inside the container, stable across restarts. The cost is
+that the port must be free. The script stops early with a hint when it is not,
+and a run can override it (`UI_PORT=5273 bun run test:e2e:ci`) because values
+already in the environment win over `.env`.
 
 See [UI and Test Architecture](ui-testing.md) for the unit and component tests.
 Back to the [index](../index.md).
