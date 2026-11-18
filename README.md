@@ -99,8 +99,10 @@ database, which is truncated before every test.
 - `bun run test:e2e:ci` builds the db, api and ui images, starts
   `compose.playwright.yml` (Postgres, migrations, api, ui), runs the same specs
   against the images through the ui's published port, and always tears the stack
-  down. It publishes the ui on `UI_PORT`, so that port must be free: stop your dev
-  server first or override it for the run (`UI_PORT=5273 bun run test:e2e:ci`).
+  down. The stack runs on `API_PORT` and `UI_PORT` plus one (3001 and 5174 with
+  the defaults), so it does not collide with your dev servers. Only one run can
+  use a pair of ports at a time: a second run stops with a hint, and moving the
+  base for one of them avoids that (`UI_PORT=5200 API_PORT=3200 bun run test:e2e:ci`).
   It needs Docker running and is the one to use on a CI runner. If a test
   takes the api or ui down, Docker restarts it and the next test waits until it is
   healthy again; the test that caused it fails, and the run lists every death

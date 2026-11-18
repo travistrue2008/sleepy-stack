@@ -89,11 +89,20 @@ Two Docker details shaped this. A restart policy never applies to a container
 that was stopped by hand, so `docker kill` and `docker stop` cannot simulate a
 crash; the process has to exit by itself (or be OOM-killed). And an ephemeral
 host port (`0:5173`) is drawn again whenever the container restarts, so the ui
-is published on `UI_PORT` itself (`"${UI_PORT}:${UI_PORT}"`): one input, the same
-number on the host and inside the container, stable across restarts. The cost is
-that the port must be free. The script stops early with a hint when it is not,
-and a run can override it (`UI_PORT=5273 bun run test:e2e:ci`) because values
-already in the environment win over `.env`.
+is published on a fixed port, `"${UI_PORT}:${UI_PORT}"`: the same number on the
+host and inside the container, stable across restarts.
+
+The script gives compose its own copy of the two ports: `API_PORT` and `UI_PORT`
+from `.env` plus `STACK_INDEX` (1), so 3001 and 5174 for 3000 and 5173. That
+keeps the stack off the dev servers' ports, and the originals are never changed.
+It does this with an `env` prefix on every compose command: compose reads the
+rest of `.env` itself, and a variable in the shell environment beats `.env`
+(an explicit `--env-file .env` would fail on a runner that has no `.env`). The
+suite and the ui image build get the shifted values as well. `STACK_INDEX` is a
+constant, not a setting. A caller can still move the base (`UI_PORT=5200
+API_PORT=3200 bun run test:e2e:ci`), because values already in the environment
+win over `.env`. Two runs cannot overlap on one base: the second stops at an
+early "port already in use" check.
 
 See [UI and Test Architecture](ui-testing.md) for the unit and component tests.
 Back to the [index](../index.md).

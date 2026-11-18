@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-# Runs the Playwright suite against the shipped images instead of dev servers:
+# Runs the Playwright suite against the shipped images instead of dev servers.
+# The stack runs on the API_PORT and UI_PORT from .env plus one (3001 and 5174
+# for 3000 and 5173), so it never collides with the dev servers on those ports.
 #
 #   1. builds the db, api and ui images
 #   2. starts compose.playwright.yml and waits until every service is healthy
@@ -24,8 +26,8 @@ export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.docker/bin"
 TIMEOUT="${E2E_READY_TIMEOUT:-30}"
 
 IMAGE_TAG="ci"
-PROJECT="example-e2e-$(date +%s)-$$"
-COMPOSE=(docker compose -p "$PROJECT" -f compose.playwright.yml)
+STACK_INDEX=1
+PROJECT="example-e2e-$(date +%s)-$$-${STACK_INDEX}"
 
 started=0
 events_pid=""
@@ -78,7 +80,8 @@ elif ! command -v bun >/dev/null 2>&1; then
 fi
 
 # Values already in the environment win over .env, as they do for dotenv and
-# compose, so a run can override a port: UI_PORT=5273 bun run test:e2e:ci
+# compose, so a run can move the base ports: UI_PORT=5200 API_PORT=3200 ...
+# These are only the base: the stack itself runs on them plus STACK_INDEX.
 if [ -f .env ]; then
 	while IFS='=' read -r key value || [ -n "$key" ]; do
 		case "$key" in
@@ -101,8 +104,34 @@ fi
 : "${API_PORT:?API_PORT is not set (see .env.example)}"
 : "${UI_PORT:?UI_PORT is not set (see .env.example)}"
 
-if (exec 3<>"/dev/tcp/127.0.0.1/${UI_PORT}") 2>/dev/null; then
-	die "port ${UI_PORT} is already in use; use a free one, for example UI_PORT=5273 bun run test:e2e:ci"
+for name in API_PORT UI_PORT; do
+	case "${!name}" in
+		'' | *[!0-9]*) die "${name} must be a whole number, got '${!name}'" ;;
+	esac
+done
+
+# 10# forces base 10, so a value with a leading zero is not read as octal
+stack_api_port=$((10#${API_PORT} + STACK_INDEX))
+stack_ui_port=$((10#${UI_PORT} + STACK_INDEX))
+
+if [ "$stack_api_port" -gt 65535 ] || [ "$stack_ui_port" -gt 65535 ]; then
+	die "the stack ports ${stack_api_port}/${stack_ui_port} are out of range; lower API_PORT and UI_PORT"
+fi
+
+# Compose reads the rest of .env itself; the shifted pair comes from the
+# environment, which beats .env, and the originals are left untouched.
+COMPOSE=(
+	env
+	"API_PORT=${stack_api_port}"
+	"UI_PORT=${stack_ui_port}"
+	docker compose -p "$PROJECT" -f compose.playwright.yml
+)
+
+log "base ports ${API_PORT}/${UI_PORT}, stack ports ${stack_api_port}/${stack_ui_port}"
+
+# Only the ui is published on the host: the api's port is inside the compose network.
+if (exec 3<>"/dev/tcp/127.0.0.1/${stack_ui_port}") 2>/dev/null; then
+	die "port ${stack_ui_port} is already in use; move the base, for example UI_PORT=5200 API_PORT=3200 bun run test:e2e:ci"
 fi
 
 # 1. Images. The root is passed as a named build context, as in each Dockerfile header.
@@ -113,7 +142,7 @@ for image in db api ui; do
 
 	# the ui image has no .env, and vite.config.ts fails when either port is missing
 	if [ "$image" = ui ]; then
-		build_args=(--build-arg "API_PORT=${API_PORT}" --build-arg "UI_PORT=${UI_PORT}")
+		build_args=(--build-arg "API_PORT=${stack_api_port}" --build-arg "UI_PORT=${stack_ui_port}")
 	fi
 
 	docker build \
@@ -139,7 +168,7 @@ pg_port="$("${COMPOSE[@]}" port postgres 5432 | sed 's/.*://')"
 ready=0
 
 for _ in $(seq 1 "$TIMEOUT"); do
-	if curl -sf -o /dev/null "http://localhost:${UI_PORT}/api/health"; then
+	if curl -sf -o /dev/null "http://localhost:${stack_ui_port}/api/health"; then
 		ready=1
 		break
 	fi
@@ -166,7 +195,7 @@ events_pid=$!
 # give the event stream a moment to attach before the first test runs
 sleep 1
 
-log "running the suite against ui port ${UI_PORT} and postgres port ${pg_port}"
+log "running the suite against ui port ${stack_ui_port} and postgres port ${pg_port}"
 
 status=0
 
@@ -174,6 +203,7 @@ CI=true \
 	E2E_COMPOSE_PROJECT="$PROJECT" \
 	POSTGRES_HOST=localhost \
 	POSTGRES_PORT="$pg_port" \
+	UI_PORT="$stack_ui_port" \
 	bun run test:e2e:headless "$@" || status=$?
 
 kill "$events_pid" 2>/dev/null || true
