@@ -46,6 +46,7 @@ services:
 
   api:
     image: example/api:ci
+    restart: unless-stopped
     pull_policy: never
     environment:
       API_PORT: ${API_PORT}
@@ -70,12 +71,13 @@ services:
 
   ui:
     image: example/ui:ci
+    restart: unless-stopped
     pull_policy: never
     environment:
       API_URL: api:${API_PORT}
       UI_PORT: ${UI_PORT}
     ports:
-      - "0:${UI_PORT}"
+      - "${E2E_UI_HOST_PORT:-0}:${UI_PORT}"
     healthcheck:
       retries: 30
       timeout: 3s

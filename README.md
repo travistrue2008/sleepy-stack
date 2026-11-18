@@ -99,7 +99,10 @@ database, which is truncated before every test.
 - `bun run test:e2e:ci` builds the db, api and ui images, starts
   `compose.playwright.yml` (Postgres, migrations, api, ui), runs the same specs
   against the images through the ui's published port, and always tears the stack
-  down. It needs Docker running and is the one to use on a CI runner.
+  down. It needs Docker running and is the one to use on a CI runner. If a test
+  takes the api or ui down, Docker restarts it and the next test waits until it is
+  healthy again; the test that caused it fails, and the run lists every death
+  with its exit code and fails even if all the tests passed.
 
 Playwright needs a Chromium build that matches its version, which
 `mise run setup` installs.

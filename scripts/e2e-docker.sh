@@ -5,7 +5,9 @@
 #   1. builds the db, api and ui images
 #   2. starts compose.playwright.yml and waits until every service is healthy
 #   3. runs the suite host-side with CI set, so Playwright starts no servers
-#   4. always tears the stack down, printing the service logs first on failure
+#   4. reports every time the api or ui container died during the run, with its
+#      exit code, and fails the run when that happened even if every test passed
+#   5. always tears the stack down, printing the service logs first on failure
 #
 # Extra arguments are passed to Playwright, for example:
 #   ./scripts/e2e-docker.sh e2e/tests/items.spec.ts
@@ -26,12 +28,27 @@ PROJECT="example-e2e-$(date +%s)-$$"
 COMPOSE=(docker compose -p "$PROJECT" -f compose.playwright.yml)
 
 started=0
+events_pid=""
+events_log=""
 
 log() { echo "e2e-docker.sh: $*"; }
 die() { echo "e2e-docker.sh: $*" >&2; exit 1; }
 
+# `date -r <epoch>` is BSD (macOS); `date -d @<epoch>` is GNU (Linux)
+format_time() { date -r "$1" +%T 2>/dev/null || date -d "@$1" +%T; }
+
+# invoked by the EXIT trap below, which shellcheck does not follow
+# shellcheck disable=SC2329
 cleanup() {
 	local status=$?
+
+	if [ -n "$events_pid" ]; then
+		kill "$events_pid" 2>/dev/null || true
+	fi
+
+	if [ -n "$events_log" ]; then
+		rm -f "$events_log"
+	fi
 
 	if [ "$started" = 1 ]; then
 		if [ "$status" -ne 0 ]; then
@@ -56,6 +73,7 @@ docker info >/dev/null 2>&1 || die "the Docker daemon is not running"
 
 if MISE="$(find_mise)"; then
 	bun() { "$MISE" exec -- bun "$@"; }
+	node() { "$MISE" exec -- node "$@"; }
 elif ! command -v bun >/dev/null 2>&1; then
 	die "neither mise nor bun was found"
 fi
@@ -92,17 +110,33 @@ for image in db api ui; do
 		"packages/${image}" >/dev/null
 done
 
+# The ui's host port is chosen once, up front. An ephemeral port would be
+# re-drawn whenever Docker restarts the container, leaving the suite pointed at a
+# dead port, so the port has to be the same before and after a restart.
+free_port() {
+	node -e "
+		const server = require('node:net').createServer()
+
+		server.listen(0, () => {
+			console.log(server.address().port)
+			server.close()
+		})
+	"
+}
+
+ui_port="${E2E_UI_HOST_PORT:-$(free_port)}"
+export E2E_UI_HOST_PORT="$ui_port"
+
 # 2. Stack. --wait blocks until every healthcheck passes and the one-shot
 # services (database creation and migration) have completed.
 log "starting the compose stack"
 started=1
 "${COMPOSE[@]}" up -d --wait
 
-# The host ports are published on ephemeral ports, so ask Docker which ones.
-# They are exported only after `up`: compose interpolates the environment, and
-# a host-side POSTGRES_PORT must never reach the containers' own settings.
+# Postgres is never restarted, so its ephemeral host port can be read once. It is
+# exported only after `up`: compose interpolates the environment, and a host-side
+# POSTGRES_PORT must never reach the containers' own settings.
 pg_port="$("${COMPOSE[@]}" port postgres 5432 | sed 's/.*://')"
-ui_port="$("${COMPOSE[@]}" port ui "$UI_PORT" | sed 's/.*://')"
 
 ready=0
 
@@ -118,10 +152,51 @@ done
 [ "$ready" = 1 ] || die "the ui could not reach the api through its /api proxy"
 
 # 3. Suite. CI makes the Playwright config skip its dev servers and dotenv.
+# Docker restarts a crashed api or ui (see compose.playwright.yml), so a death is
+# invisible unless it is recorded: follow the container `die` events for the
+# whole run. The suite itself also compares restart counts around every test
+# (E2E_COMPOSE_PROJECT tells it which project to inspect).
+events_log="$(mktemp)"
+
+docker events \
+	--filter "label=com.docker.compose.project=${PROJECT}" \
+	--filter event=die \
+	--format '{{.Time}} {{index .Actor.Attributes "com.docker.compose.service"}} exit={{index .Actor.Attributes "exitCode"}}' \
+	>"$events_log" 2>&1 &
+events_pid=$!
+
+# give the event stream a moment to attach before the first test runs
+sleep 1
+
 log "running the suite against ui port ${ui_port} and postgres port ${pg_port}"
 
+status=0
+
 CI=true \
+	E2E_COMPOSE_PROJECT="$PROJECT" \
 	POSTGRES_HOST=localhost \
 	POSTGRES_PORT="$pg_port" \
 	UI_PORT="$ui_port" \
-	bun run test:e2e:headless "$@"
+	bun run test:e2e:headless "$@" || status=$?
+
+kill "$events_pid" 2>/dev/null || true
+wait "$events_pid" 2>/dev/null || true
+events_pid=""
+
+# 4. Deaths. The one-shot services exited before the stream started, and the
+# stream is stopped before teardown, so every api or ui entry here is a real one.
+deaths="$(grep -E ' (api|ui) exit=' "$events_log" || true)"
+
+if [ -n "$deaths" ]; then
+	log "the api or ui container died during the run:"
+
+	while read -r when service code; do
+		log "  $(format_time "$when") ${service} ${code}"
+	done <<< "$deaths"
+
+	if [ "$status" -eq 0 ]; then
+		status=1
+	fi
+fi
+
+exit "$status"

@@ -74,3 +74,7 @@ export type HttpStatus = typeof HttpStatus[keyof typeof HttpStatus]
 export function getBaseUrl (): string {
   return `http://localhost:${requireEnv('UI_PORT')}`
 }
+
+export function sleep (ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}

@@ -66,5 +66,30 @@ Two modes run the same specs:
 Every test starts from empty tables: an automatic fixture truncates all schema
 tables first, so a failed test never poisons the next one.
 
+### When a container dies during the image-based run
+
+Each test should start clean even if the previous one took a server down, but a
+crash of a production-built image is important information and must never be
+hidden. So the run recovers and reports, in three layers:
+
+- `api` and `ui` have `restart: unless-stopped` in `compose.playwright.yml`.
+  `unless-stopped` and not `on-failure`, because any exit of a server process is
+  unexpected, even with exit code 0.
+- Before each test the fixture waits for `/api/health` through the ui origin, so
+  a test that follows a crash only starts once both servers are back. After each
+  test it compares the containers' restart counts with the ones from before, and
+  fails that test with "the api container died during this test" if they moved.
+  Only the test that caused the crash fails.
+- `scripts/e2e-docker.sh` follows `docker events` for the whole run and prints
+  every `die` of the api or ui with its time and exit code. It fails the run if
+  any happened, even when every test passed. The exit code is only reliable
+  here: once a container is running again, `docker inspect` no longer shows it.
+
+Two Docker details shaped this. A restart policy never applies to a container
+that was stopped by hand, so `docker kill` and `docker stop` cannot simulate a
+crash; the process has to exit by itself (or be OOM-killed). And an ephemeral
+host port (`0:5173`) is drawn again whenever the container restarts, so the
+script picks the ui's host port once and passes it in as `E2E_UI_HOST_PORT`.
+
 See [UI and Test Architecture](ui-testing.md) for the unit and component tests.
 Back to the [index](../index.md).
