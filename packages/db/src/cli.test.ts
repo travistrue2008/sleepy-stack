@@ -5,9 +5,10 @@ import { mkdirSync, rmSync, readdirSync, writeFileSync } from 'node:fs'
 import pg from 'pg'
 
 import {
+  Target,
+  exec,
   setMigrationsFolder,
   getMigrationsFolder,
-  exec,
 } from './cli'
 
 import {
@@ -21,9 +22,11 @@ import {
 } from 'bun:test'
 
 import type { Client } from 'pg'
+import type { Prefix } from './cli'
 
 const MAIN_DB = 'test_db_main'
 const TEST_DBS = ['test_1', 'test_2']
+const E2E_DBS = ['e2e_1', 'e2e_2']
 const TEST_MAX_WORKERS = process.env.TEST_MAX_WORKERS!
 const MAX_WORKERS = Number.parseInt(TEST_MAX_WORKERS, 10)
 const ENV_DIR = path.resolve(import.meta.dirname, '..', '.env')
@@ -82,7 +85,7 @@ async function runExec (...args: Parameters<typeof exec>) {
 }
 
 async function runAdminSession<T> (fn: (client: Client) => Promise<T>) {
-  const port = Number.parseInt(process.env.POSTGRES_PORT ?? '', 10)
+  const port = Number.parseInt(process.env.POSTGRES_PORT!, 10)
 
   const client = new pg.Client({
     port,
@@ -129,13 +132,13 @@ async function ensureDatabaseAbsent (name: string) {
   }
 }
 
-async function ensureAllTestDatabasesAbsent () {
+async function ensureAllTestDatabasesAbsent (prefix: Prefix) {
   await runAdminSession(async (client) => {
     const { rows } = await client.query<{ datname: string }>(`
 SELECT datname
 FROM pg_database
-WHERE datname ~ '^test_\\d+$'
-    `.trim())
+WHERE datname ~ $1
+    `.trim(), [`^${prefix}_\\d+$`])
 
     for (const { datname } of rows) {
       await client.query(`DROP DATABASE "${datname}" WITH (FORCE)`)
@@ -192,12 +195,14 @@ describe('CLI', () => {
     process.env.POSTGRES_DB = 'test_db_main'
 
     await ensureDatabaseAbsent(MAIN_DB)
-    await ensureAllTestDatabasesAbsent()
+    await ensureAllTestDatabasesAbsent(Target.Test)
+    await ensureAllTestDatabasesAbsent(Target.E2E)
   })
 
   afterAll(async () => {
     await ensureDatabaseAbsent(MAIN_DB)
-    await ensureAllTestDatabasesAbsent()
+    await ensureAllTestDatabasesAbsent(Target.Test)
+    await ensureAllTestDatabasesAbsent(Target.E2E)
 
     dotenv.config({
       quiet: true,
@@ -211,7 +216,7 @@ describe('CLI', () => {
 
     for (const name of dbNames) {
       await createDatabase(name)
-      await runExec('migrate', 'up', 'test')
+      await runExec('migrate', 'up', Target.Test)
     }
   })
 
@@ -290,7 +295,7 @@ describe('CLI', () => {
         test('when TEST_MAX_WORKERS is NOT set', async () => {
           delete process.env.TEST_MAX_WORKERS
 
-          const result = await runExec('database', 'create', 'test')
+          const result = await runExec('database', 'create', Target.Test)
 
           expect(result.exitCode).toBe(0)
           expect(await databaseExists('test_1')).toBe(true)
@@ -299,7 +304,7 @@ describe('CLI', () => {
         test('when TEST_MAX_WORKERS is INVALID', async () => {
           process.env.TEST_MAX_WORKERS = 'abc'
 
-          const result = await runExec('database', 'create', 'test')
+          const result = await runExec('database', 'create', Target.Test)
 
           expect(result.exitCode).toBe(1)
 
@@ -313,7 +318,7 @@ describe('CLI', () => {
             await createDatabase(name)
           }
 
-          const result = await runExec('database', 'create', 'test')
+          const result = await runExec('database', 'create', Target.Test)
 
           expect(result.exitCode).toBe(0)
 
@@ -336,7 +341,7 @@ describe('CLI', () => {
 
           process.env.TEST_MAX_WORKERS = '1'
 
-          const result = await runExec('database', 'create', 'test')
+          const result = await runExec('database', 'create', Target.Test)
 
           querySpy.mockRestore()
 
@@ -346,10 +351,77 @@ describe('CLI', () => {
         })
 
         test('when invoked', async () => {
-          const result = await runExec('database', 'create', 'test')
+          const result = await runExec('database', 'create', Target.Test)
 
           expect(result.exitCode).toBe(0)
           expect(await allTestDatabasesExist(TEST_DBS)).toBe(true)
+        })
+      })
+
+      describe('"target" = "e2e"', () => {
+        test('when TEST_MAX_WORKERS is NOT set', async () => {
+          delete process.env.TEST_MAX_WORKERS
+
+          const result = await runExec('database', 'create', Target.E2E)
+
+          expect(result.exitCode).toBe(0)
+          expect(await databaseExists('e2e_1')).toBe(true)
+        })
+
+        test('when TEST_MAX_WORKERS is INVALID', async () => {
+          process.env.TEST_MAX_WORKERS = 'abc'
+
+          const result = await runExec('database', 'create', Target.E2E)
+
+          expect(result.exitCode).toBe(1)
+
+          expect(result.stderr).toContain(
+            'TEST_MAX_WORKERS must be a positive integer',
+          )
+        })
+
+        test('when the target databases already exist', async () => {
+          for (const name of E2E_DBS) {
+            await createDatabase(name)
+          }
+
+          const result = await runExec('database', 'create', Target.E2E)
+
+          expect(result.exitCode).toBe(0)
+
+          for (const name of E2E_DBS) {
+            expect(result.stdout).toContain(`Database '${name}' already exists`)
+          }
+
+          expect(await allTestDatabasesExist(E2E_DBS)).toBe(true)
+        })
+
+        test('when the existence check returns a null row count', async () => {
+          const querySpy = spyOn(pg.Client.prototype, 'query')
+            .mockImplementationOnce(() => Promise.resolve({
+              rows: [],
+              command: 'SELECT',
+              rowCount: null,
+              oid: 0,
+              fields: [],
+            }))
+
+          process.env.TEST_MAX_WORKERS = '1'
+
+          const result = await runExec('database', 'create', Target.E2E)
+
+          querySpy.mockRestore()
+
+          expect(result.exitCode).toBe(0)
+          expect(result.stdout).toContain("Created database 'e2e_1'")
+          expect(await databaseExists('e2e_1')).toBe(true)
+        })
+
+        test('when invoked', async () => {
+          const result = await runExec('database', 'create', Target.E2E)
+
+          expect(result.exitCode).toBe(0)
+          expect(await allTestDatabasesExist(E2E_DBS)).toBe(true)
         })
       })
     })
@@ -395,7 +467,7 @@ describe('CLI', () => {
       })
 
       test('when "test" target databases DO NOT exist', async () => {
-        const result = await runExec('database', 'drop', 'test')
+        const result = await runExec('database', 'drop', Target.Test)
 
         expect(result.exitCode).toBe(0)
         expect(await allTestDatabasesExist(TEST_DBS)).toBe(false)
@@ -406,11 +478,32 @@ describe('CLI', () => {
           await createDatabase(name)
         }
 
-        const result = await runExec('database', 'drop', 'test')
+        const result = await runExec('database', 'drop', Target.Test)
 
         expect(result.exitCode).toBe(0)
 
         for (const name of TEST_DBS) {
+          expect(await databaseExists(name)).toBe(false)
+        }
+      })
+
+      test('when "e2e" target databases DO NOT exist', async () => {
+        const result = await runExec('database', 'drop', Target.E2E)
+
+        expect(result.exitCode).toBe(0)
+        expect(await allTestDatabasesExist(E2E_DBS)).toBe(false)
+      })
+
+      test('when "e2e" target databases exist', async () => {
+        for (const name of E2E_DBS) {
+          await createDatabase(name)
+        }
+
+        const result = await runExec('database', 'drop', Target.E2E)
+
+        expect(result.exitCode).toBe(0)
+
+        for (const name of E2E_DBS) {
           expect(await databaseExists(name)).toBe(false)
         }
       })
@@ -452,12 +545,25 @@ describe('CLI', () => {
       })
 
       test('when "test" target invoked', async () => {
-        const result = await runExec('database', 'reset', 'test')
+        const result = await runExec('database', 'reset', Target.Test)
 
         expect(result.exitCode).toBe(0)
         expect(await allTestDatabasesExist(TEST_DBS)).toBe(true)
 
         for (const name of TEST_DBS) {
+          expect(result.stdout).toContain(
+            `Ran migrations for database '${name}'`,
+          )
+        }
+      })
+
+      test('when "e2e" target invoked', async () => {
+        const result = await runExec('database', 'reset', Target.E2E)
+
+        expect(result.exitCode).toBe(0)
+        expect(await allTestDatabasesExist(E2E_DBS)).toBe(true)
+
+        for (const name of E2E_DBS) {
           expect(result.stdout).toContain(
             `Ran migrations for database '${name}'`,
           )
@@ -556,7 +662,7 @@ describe('CLI', () => {
       })
 
       test('when "test" target databases DO NOT exist', async () => {
-        const result = await runExec('migrate', 'up', 'test')
+        const result = await runExec('migrate', 'up', Target.Test)
 
         expect(result.exitCode).toBe(0)
       })
@@ -566,11 +672,33 @@ describe('CLI', () => {
           await createDatabase(name)
         }
 
-        const result = await runExec('migrate', 'up', 'test')
+        const result = await runExec('migrate', 'up', Target.Test)
 
         expect(result.exitCode).toBe(0)
 
         for (const name of TEST_DBS) {
+          expect(result.stdout).toContain(
+            `Ran migrations for database '${name}'`,
+          )
+        }
+      })
+
+      test('when "e2e" target databases DO NOT exist', async () => {
+        const result = await runExec('migrate', 'up', Target.E2E)
+
+        expect(result.exitCode).toBe(0)
+      })
+
+      test('when "e2e" target databases exist', async () => {
+        for (const name of E2E_DBS) {
+          await createDatabase(name)
+        }
+
+        const result = await runExec('migrate', 'up', Target.E2E)
+
+        expect(result.exitCode).toBe(0)
+
+        for (const name of E2E_DBS) {
           expect(result.stdout).toContain(
             `Ran migrations for database '${name}'`,
           )
@@ -619,7 +747,7 @@ describe('CLI', () => {
       })
 
       test('when "test" target databases DO NOT exist', async () => {
-        const result = await runExec('migrate', 'down', 'test')
+        const result = await runExec('migrate', 'down', Target.Test)
 
         expect(result.exitCode).toBe(0)
         expect(await allTestDatabasesExist(TEST_DBS)).toBe(true)
@@ -630,10 +758,28 @@ describe('CLI', () => {
           await createDatabase(name)
         }
 
-        const result = await runExec('migrate', 'down', 'test')
+        const result = await runExec('migrate', 'down', Target.Test)
 
         expect(result.exitCode).toBe(0)
         expect(await allTestDatabasesExist(TEST_DBS)).toBe(true)
+      })
+
+      test('when "e2e" target databases DO NOT exist', async () => {
+        const result = await runExec('migrate', 'down', Target.E2E)
+
+        expect(result.exitCode).toBe(0)
+        expect(await allTestDatabasesExist(E2E_DBS)).toBe(true)
+      })
+
+      test('when "e2e" target databases exist', async () => {
+        for (const name of E2E_DBS) {
+          await createDatabase(name)
+        }
+
+        const result = await runExec('migrate', 'down', Target.E2E)
+
+        expect(result.exitCode).toBe(0)
+        expect(await allTestDatabasesExist(E2E_DBS)).toBe(true)
       })
     })
 

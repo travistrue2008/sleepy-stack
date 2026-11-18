@@ -1,0 +1,40 @@
+{
+  "runOnStartup": false,
+  "terminals": [
+    {
+      "cwd": "${workspaceFolder}",
+      "splitTerminals": [
+        {
+          "name": "api",
+          "commands": ["bun run --cwd=packages/api dev"]
+        },
+        {
+          "name": "ui",
+          "commands": ["bun run --cwd=packages/ui dev"]
+        },
+        {
+          "name": "ui:storybook",
+          "commands": ["bun run --cwd=packages/ui storybook"]
+        }
+      ]
+    },
+    {
+      "cwd": "${workspaceFolder}",
+      "splitTerminals": [
+        {
+          "name": "e2e",
+          "commands": []
+        }
+      ]
+    },
+    {
+      "cwd": "${workspaceFolder}",
+      "splitTerminals": [
+        {
+          "name": "general",
+          "commands": []
+        }
+      ]
+    }
+  ]
+}

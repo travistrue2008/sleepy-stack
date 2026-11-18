@@ -4,16 +4,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Setup
 
-```bash
-# install global environment packages/dependencies
-brew install mise          # macOS
-apt-get install -y mise    # Ubuntu/Debian
-```
+### Install Environment Dependencies
 
 ```bash
-# install project-level dependencies
-mise install && mise run setup
-bun install
+# macOS
+brew update
+brew install mise
+echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
+
+# Ubuntu 26.04
+sudo add-apt-repository -y ppa:jdxcode/mise
+sudo apt update
+sudo apt install -y mise
+echo 'eval "$(mise activate bash)"' >> ~/.bashrc
+```
+
+Then, start a new terminal session.
+
+### Update Environment Dependencies
+
+```bash
+# macOS
+brew update
+brew upgrade mise
+
+# Ubuntu 26.04
+sudo apt update
+sudo apt install -y --only-upgrade mise
+```
+
+### Install project-level Dependencies
+
+```bash
+mise trust
+mise install
+mise run setup
 ```
 
 Make sure Docker is installed on your machine.
@@ -22,63 +47,72 @@ Make sure Docker is installed on your machine.
 
 Make sure this project's Docker compose stack has started before running any commands.
 
+### Global (run from root)
+
 ```bash
-# Global (run from root)
-
 # testing
-bun run test:db                     # run DB tests
-bun run test:api                    # run API tests
-bun run test:ui                     # run UI tests
-bun run test                        # run ALL tests
+bun run test:db                       # run DB tests
+bun run test:api                      # run API tests
+bun run test:ui                       # run UI tests
+bun run test:e2e                      # run E2E tests (starts dev servers, headed)
+bun run test:e2e:headless             # run E2E tests (starts dev servers, headless)
+bun run test:e2e:ci                   # run E2E tests against the built Docker images
 # TypeScript checking
-bun run typecheck:db                # DB TypeScript checks
-bun run typecheck:api               # API TypeScript checks
-bun run typecheck:ui                # UI TypeScript checks
-bun run typecheck                   # ALL TypeScript checks
+bun run typecheck:db                  # DB TypeScript checks
+bun run typecheck:api                 # API TypeScript checks
+bun run typecheck:ui                  # UI TypeScript checks
+bun run typecheck:e2e                 # E2E TypeScript checks
+bun run typecheck                     # ALL TypeScript checks
 # linting
-bun run lint                        # run lint EVERYTHING
-bun run lint:fix                    # run lint fixes
+bun run lint                          # run lint EVERYTHING
+bun run lint:fix                      # run lint fixes
 # database management
-bun run db:create <main|test>       # create target database
-bun run db:drop <main|test>         # drop target database
-bun run db:reset <main|test>        # reset target database
+bun run db:create <main|test|e2e>     # create target database
+bun run db:drop <main|test|e2e>       # drop target database
+bun run db:reset <main|test|e2e>      # reset target database
 # database migration
-bun run migrate:generate            # generate new migration
-bun run migrate:up <main|test>      # migrate target database up
-bun run migrate:down <main|test>    # migrate target database down
+bun run migrate:generate              # generate new migration
+bun run migrate:up <main|test|e2e>    # migrate target database up
+bun run migrate:down <main|test|e2e>  # migrate target database down
+```
 
-# DB (run from packages/db)
+### DB (run from packages/db)
 
+```bash
 # database management
-bun run db:create <main|test>       # create target database
-bun run db:drop <main|test>         # drop target database
-bun run db:reset <main|test>        # reset target database
+bun run db:create <main|test|e2e>     # create target database
+bun run db:drop <main|test|e2e>       # drop target database
+bun run db:reset <main|test|e2e>      # reset target database
 # database migration
-bun run migrate:generate            # generate new migration
-bun run migrate:up <main|test>      # migrate target database up
-bun run migrate:down <main|test>    # migrate target database down
+bun run migrate:generate              # generate new migration
+bun run migrate:up <main|test|e2e>    # migrate target database up
+bun run migrate:down <main|test|e2e>  # migrate target database down
 # misc
-bun run typecheck                   # TypeScript checks
-bun run test                        # run tests
-bun test src/utils.test.ts          # run single test suite
+bun run typecheck                     # TypeScript checks
+bun run test                          # run tests
+bun test src/utils.test.ts            # run single test suite
+```
 
-# API (run from packages/api)
+### API (run from packages/api)
 
-bun dev                             # start (watch mode)
-bun test                            # run tests
-bun test src/utils.test.ts          # run single test suite
+```bash
+bun dev                               # start (watch mode)
+bun test                              # run tests
+bun test src/utils.test.ts            # run single test suite
+```
 
-# UI (run from packages/ui)
+### UI (run from packages/ui)
 
-bun run dev                         # run vite dev server (watch mode)
-bun run build                       # build React app into static site
-bun run preview                     # build preview
-bun run storybook                   # start Storybook site (watch mode)
-bun run storybook:build             # build Storybook site
-bun run typecheck                   # TypeScript checks
-bun run test                        # run tests (one-shot)
-bun run test -- --project=unit      # run unit tests
-bun run test:watch                  # run tests (watch mode)
+```bash
+bun run dev                           # run vite dev server (watch mode)
+bun run build                         # build React app into static site
+bun run preview                       # build preview
+bun run storybook                     # start Storybook site (watch mode)
+bun run storybook:build               # build Storybook site
+bun run typecheck                     # TypeScript checks
+bun run test                          # run tests (one-shot)
+bun run test -- --project=unit        # run unit tests
+bun run test:watch                    # run tests (watch mode)
 ```
 
 **Runtimes:** Bun is the package manager everywhere and runs `packages/api`.
@@ -103,7 +137,7 @@ New functionality must be covered by new tests. See `.claude/rules/tests.md` for
 
 Only give me an objective answers as the goal is clarity, and not wishful thinking/comfort. Do not instantly agree with what I'm saying for the sake of agreeing. Be objective. You will act as 3 individuals: the first one gives a response, the second one makes an opposing argument, and the third one acts as the judge who combines the most accurate parts of each argument, and puts them together to form a single answer. Only provide the judge's output.
 
-## Notes
+## Kbase
 
-- Contextual knowledge lives in the [`.claude/kbase`](./kbase/index.md) knowledge base. Start with [Architecture Overview](./kbase/architecture/overview.md).
+- Contextual knowledge lives in the [`.claude/kbase`](./kbase/index.md) knowledge base.
 - `.claude/kbase/ideas` is where unimplemented ideas and edge-cases go. It's not guaranteed that those ideas will go anywhere though.

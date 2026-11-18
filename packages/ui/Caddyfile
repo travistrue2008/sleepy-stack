@@ -1,0 +1,23 @@
+# Serves the built SPA inside the ui image and proxies /api to the api
+# container beside it, so the image is a complete origin on its own.
+#
+# API_URL is the api's address as seen from this container, for example
+# http://api:3000, and UI_PORT is the port to listen on. Both are passed as
+# environment variables.
+
+:{$UI_PORT} {
+	root * /srv
+
+	encode gzip zstd
+
+	# The api mounts its own routes under /api, so the prefix is forwarded
+	# as-is rather than stripped.
+	handle /api/* {
+		reverse_proxy {env.API_URL}
+	}
+
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}

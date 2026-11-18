@@ -3,5 +3,4 @@ export const ItemSortOrder = {
   Desc: 'desc',
 } as const
 
-export type ItemSortOrder =
-  typeof ItemSortOrder[keyof typeof ItemSortOrder]
+export type ItemSortOrder = typeof ItemSortOrder[keyof typeof ItemSortOrder]

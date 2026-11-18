@@ -1,7 +1,7 @@
 import db from '../../db'
-import { client } from '../../../test-helpers'
 import { StatusCode } from 'sleepy-serv'
 import { afterEach, describe, test, expect } from 'bun:test'
+import { client } from '../../../test-helpers'
 
 describe('GET /api/health', () => {
   const originalPort = process.env.POSTGRES_PORT

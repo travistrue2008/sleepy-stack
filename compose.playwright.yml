@@ -1,0 +1,56 @@
+services:
+
+  api:
+    image: example/api:ci
+    restart: unless-stopped
+    pull_policy: never
+    environment:
+      API_PORT: ${API_PORT}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: e2e_${PORT_OFFSET}
+    networks:
+      - default
+      - shared
+    healthcheck:
+      retries: 30
+      timeout: 3s
+      interval: 2s
+      test: [
+        "CMD",
+        "bun",
+        "-e",
+        "process.exit((await fetch(`http://127.0.0.1:$${process.env.API_PORT}/api/health`)).status === 204 ? 0 : 1)"
+      ]
+
+  ui:
+    image: example/ui:ci
+    restart: unless-stopped
+    pull_policy: never
+    environment:
+      API_URL: api:${API_PORT}
+      UI_PORT: ${UI_PORT}
+    ports:
+      - "${UI_PORT}:${UI_PORT}"
+    healthcheck:
+      retries: 30
+      timeout: 3s
+      interval: 2s
+      test: [
+        "CMD",
+        "wget",
+        "-q",
+        "-O",
+        "/dev/null",
+        "http://127.0.0.1:${UI_PORT}/"
+      ]
+    depends_on:
+      api:
+        condition: service_healthy
+
+networks:
+  shared:
+    external: true
+    name: sleepy-stack-example_default
