@@ -96,17 +96,22 @@ database, which is truncated before every test.
   specs, and stop everything afterwards. They refuse to reuse servers that are
   already listening, so stop yours first or override the ports for the run:
   `API_PORT=3100 UI_PORT=5273 bun run test:e2e:headless`.
-- `bun run test:e2e:ci` builds the db, api and ui images, starts
-  `compose.playwright.yml` (Postgres, migrations, api, ui), runs the same specs
-  against the images through the ui's published port, and always tears the stack
-  down. The stack runs on `API_PORT` and `UI_PORT` plus one (3001 and 5174 with
-  the defaults), so it does not collide with your dev servers. Only one run can
-  use a pair of ports at a time: a second run stops with a hint, and moving the
-  base for one of them avoids that (`UI_PORT=5200 API_PORT=3200 bun run test:e2e:ci`).
-  It needs Docker running and is the one to use on a CI runner. If a test
-  takes the api or ui down, Docker restarts it and the next test waits until it is
-  healthy again; the test that caused it fails, and the run lists every death
-  with its exit code and fails even if all the tests passed.
+- `bun run test:e2e:ci` builds the db, api and ui images, starts the base stack
+  (`docker-compose.yml`, which is also your dev stack) and leaves it running,
+  then starts one copy of `compose.playwright.yml` (api, ui) per Playwright
+  worker, `TEST_MAX_WORKERS` of them (1 when unset). Copy `i` runs on `API_PORT`
+  and `UI_PORT` plus `i` (3001 and 5174 for the first, with the defaults) and
+  uses the database `e2e_i`, so it does not collide with your dev servers. The
+  specs run against the ui's published ports, and every copy is torn down at the
+  end. At the start of a run, `db:reset e2e` drops every `e2e_*` database in your
+  dev Postgres and recreates `e2e_1..N`, so do not run this and the dev-server
+  mode at the same time. Only one run can use a set of ports at a time: a second
+  run stops with a hint, and moving the base for one of them avoids that
+  (`UI_PORT=5200 API_PORT=3200 bun run test:e2e:ci`). It needs Docker running and
+  is the one to use on a CI runner. If a test takes the api or ui down, Docker
+  restarts it and the next test on that stack waits until it is healthy again;
+  the test that caused it fails, and the run lists every death with its stack and
+  exit code and fails even if all the tests passed.
 
 Playwright needs a Chromium build that matches its version, which
 `mise run setup` installs.
